@@ -87,23 +87,69 @@ if "unisole_info" not in st.session_state:
 if "api_key_configured" not in st.session_state:
     st.session_state.api_key_configured = False
 
+# Debug function to check environment variables and secrets
+def debug_api_key():
+    debug_info = {
+        "env_var_exists": os.getenv("GROQ_API_KEY") is not None,
+    }
+    
+    try:
+        debug_info["secrets_exist"] = "GROQ_API_KEY" in st.secrets
+    except:
+        debug_info["secrets_exist"] = False
+        
+    return debug_info
+
 # Initialize LLM
 @st.cache_resource
 def load_llm():
-    # First try Streamlit secrets (for Streamlit Cloud deployment)
-    try:
-        groq_api_key = st.secrets["GROQ_API_KEY"]
-    except:
-        # Then try environment variables (for local or other deployments)
-        groq_api_key = os.getenv("GROQ_API_KEY")
+    api_key = None
+    source = None
     
-    if not groq_api_key:
-        st.error("GROQ API key not found. Please set the GROQ_API_KEY in Streamlit secrets or as an environment variable.")
+    # Try Streamlit secrets first
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            api_key = st.secrets["GROQ_API_KEY"]
+            source = "streamlit_secrets"
+    except Exception as e:
+        st.sidebar.error(f"Error accessing Streamlit secrets: {str(e)}")
+    
+    # If not found in secrets, try environment variable
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY")
+        if api_key:
+            source = "env_var"
+    
+    # For debugging purposes
+    debug = debug_api_key()
+    st.sidebar.write("API Key Debug:", debug)
+    
+    if not api_key:
+        st.error("GROQ API key not found in Streamlit secrets or environment variables.")
         st.session_state.api_key_configured = False
         return None
     
+    # Log where we found the API key (without showing the key itself)
+    st.sidebar.success(f"API key found in {source}")
     st.session_state.api_key_configured = True
-    return ChatGroq(groq_api_key=groq_api_key, model_name="llama3-8b-8192")
+    
+    return ChatGroq(groq_api_key=api_key, model_name="llama3-8b-8192")
+
+# Hardcoded company info as fallback
+FALLBACK_INFO = """
+UniSole is an innovative startup company focused on empowering individuals and businesses through advanced AI solutions and digital transformation.
+
+Our Mission:
+At UniSole, we believe in democratizing access to cutting-edge technology. Our mission is to provide accessible, user-friendly AI tools that solve real-world problems and enhance productivity across various sectors.
+
+Our Products and Services:
+- AI Consulting Services
+- Custom Chatbot Solutions
+- Digital Transformation
+- AI Training and Workshops
+
+Visit our website: https://unisole-empower.vercel.app/
+"""
 
 # Function to load UniSole info from file
 def load_unisole_info():
@@ -111,14 +157,19 @@ def load_unisole_info():
         # Try UTF-8 encoding first
         try:
             with open("unisole.txt", "r", encoding="utf-8") as f:
-                return f.read()
+                content = f.read()
+                st.sidebar.success("Successfully loaded unisole.txt")
+                return content
         except UnicodeDecodeError:
             # If UTF-8 fails, try with a different encoding
             with open("unisole.txt", "r", encoding="latin-1") as f:
-                return f.read()
+                content = f.read()
+                st.sidebar.success("Successfully loaded unisole.txt with latin-1 encoding")
+                return content
     except Exception as e:
-        st.error(f"Error loading UniSole info: {str(e)}")
-        return "Error loading company information. Please check that unisole.txt exists in the same directory as this script."
+        st.sidebar.error(f"Error loading UniSole info: {str(e)}")
+        st.sidebar.info("Using fallback company information")
+        return FALLBACK_INFO
 
 # Display chat messages
 def display_chat_history():
@@ -164,7 +215,7 @@ def process_input():
         if not st.session_state.api_key_configured:
             st.session_state.chat_history.append({
                 "role": "assistant", 
-                "content": "I'm sorry, but I can't process your request because the API key hasn't been configured. Please set the GROQ_API_KEY environment variable."
+                "content": "I'm sorry, but I can't process your request because the API key hasn't been configured. Please check the sidebar for debugging information."
             })
             st.session_state.processing_message = False
             return
@@ -222,7 +273,7 @@ Always mention the website https://unisole-empower.vercel.app/ when discussing U
             else:
                 st.session_state.chat_history.append({
                     "role": "assistant", 
-                    "content": "I'm sorry, but I can't process your request because the API key hasn't been configured. Please set the GROQ_API_KEY environment variable."
+                    "content": "I'm sorry, but I can't process your request because the API key hasn't been configured. Please check the sidebar for debugging information."
                 })
         
         except Exception as e:
@@ -244,20 +295,16 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Check API key
+    # Check API key with debugging info
     load_llm()
     if not st.session_state.api_key_configured:
         st.warning("""
-        ⚠️ API key not configured. Please set the GROQ_API_KEY environment variable in your .env file or deployment environment.
+        ⚠️ API key not configured. Check the sidebar for debugging information.
         """)
     
     # Try to load UniSole info at startup
     if not st.session_state.unisole_info:
         st.session_state.unisole_info = load_unisole_info()
-        
-        # Show warning if loading failed
-        if "Error loading" in st.session_state.unisole_info:
-            st.warning("Could not load UniSole information file. Make sure unisole.txt exists in the same directory.")
     
     # Sidebar for configuration
     with st.sidebar:
@@ -266,6 +313,13 @@ def main():
         # Company logo and branding
         st.image("https://api.dicebear.com/7.x/identicon/svg?seed=unisole", width=150)
         st.markdown("### Empowering through AI solutions")
+        
+        # Add debugging section
+        with st.expander("API Key Debugging"):
+            st.write("If you're seeing API key errors, check this information:")
+            debug_info = debug_api_key()
+            st.write(debug_info)
+            st.write("Note: Proper format in TOML is `GROQ_API_KEY = \"your_key_here\"`")
         
         # Reset conversation
         if st.button("Reset Conversation"):
@@ -277,8 +331,7 @@ def main():
         # Reload company info
         if st.button("Reload Company Info"):
             st.session_state.unisole_info = load_unisole_info()
-            if "Error loading" not in st.session_state.unisole_info:
-                st.success("Company information reloaded successfully!")
+            st.success("Company information reloaded!")
             
         st.markdown("---")
         st.markdown("### About UniSole")
