@@ -87,51 +87,77 @@ if "unisole_info" not in st.session_state:
 if "api_key_configured" not in st.session_state:
     st.session_state.api_key_configured = False
 
-# Debug function to check environment variables and secrets
-def debug_api_key():
-    debug_info = {
-        "env_var_exists": os.getenv("GROQ_API_KEY") is not None,
-    }
-    
-    try:
-        debug_info["secrets_exist"] = "GROQ_API_KEY" in st.secrets
-    except:
-        debug_info["secrets_exist"] = False
-        
-    return debug_info
+if "api_key_source" not in st.session_state:
+    st.session_state.api_key_source = None
 
-# Initialize LLM
-@st.cache_resource
+# Initialize LLM with direct access to the API key from multiple sources
 def load_llm():
     api_key = None
     source = None
     
-    # Try Streamlit secrets first
+    # Method 1: Try standard Streamlit secrets access
     try:
         if "GROQ_API_KEY" in st.secrets:
             api_key = st.secrets["GROQ_API_KEY"]
             source = "streamlit_secrets"
     except Exception as e:
-        st.sidebar.error(f"Error accessing Streamlit secrets: {str(e)}")
+        st.sidebar.warning(f"Error accessing Streamlit secrets standard way: {str(e)}")
     
-    # If not found in secrets, try environment variable
+    # Method 2: Try direct access to raw secrets
+    if not api_key:
+        try:
+            # Access raw secrets dictionary
+            if hasattr(st.secrets, "_secrets"):
+                secrets_dict = st.secrets._secrets
+                for key in secrets_dict:
+                    if key == "GROQ_API_KEY":
+                        api_key = secrets_dict[key]
+                        source = "raw_secrets"
+                        break
+                    # Check if it's a nested structure
+                    elif isinstance(secrets_dict[key], dict) and "GROQ_API_KEY" in secrets_dict[key]:
+                        api_key = secrets_dict[key]["GROQ_API_KEY"]
+                        source = f"nested_raw_secrets.{key}"
+                        break
+        except Exception as e:
+            st.sidebar.warning(f"Error accessing raw secrets: {str(e)}")
+    
+    # Method 3: Parse the raw text to handle format issues
+    if not api_key and hasattr(st.secrets, "_secrets"):
+        try:
+            raw_secrets = str(st.secrets._secrets)
+            if "GROQ_API_KEY" in raw_secrets:
+                # Extract API key using string parsing
+                start_idx = raw_secrets.find("GROQ_API_KEY") + len("GROQ_API_KEY")
+                start_quote_idx = raw_secrets.find('"', start_idx)
+                end_quote_idx = raw_secrets.find('"', start_quote_idx + 1)
+                if start_quote_idx > 0 and end_quote_idx > 0:
+                    api_key = raw_secrets[start_quote_idx+1:end_quote_idx]
+                    source = "string_parsing"
+        except Exception as e:
+            st.sidebar.warning(f"Error parsing raw secrets: {str(e)}")
+
+    # Method 4: Last resort - try environment variable
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
         if api_key:
             source = "env_var"
     
-    # For debugging purposes
-    debug = debug_api_key()
-    st.sidebar.write("API Key Debug:", debug)
+    # Method 5: Hardcoded fallback - USE THIS ONLY FOR TESTING, REMOVE BEFORE DEPLOYMENT
+    if not api_key:
+        # Your API key here for testing ONLY - remove before deployment
+        api_key = "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"
+        source = "hardcoded_fallback"
     
     if not api_key:
-        st.error("GROQ API key not found in Streamlit secrets or environment variables.")
+        st.error("GROQ API key not found in any source.")
         st.session_state.api_key_configured = False
+        st.session_state.api_key_source = None
         return None
     
     # Log where we found the API key (without showing the key itself)
-    st.sidebar.success(f"API key found in {source}")
     st.session_state.api_key_configured = True
+    st.session_state.api_key_source = source
     
     return ChatGroq(groq_api_key=api_key, model_name="llama3-8b-8192")
 
@@ -153,6 +179,15 @@ Visit our website: https://unisole-empower.vercel.app/
 
 # Function to load UniSole info from file
 def load_unisole_info():
+    # First check if we're on Streamlit Cloud
+    is_cloud = os.environ.get('STREAMLIT_SHARING_MODE') is not None
+    
+    if is_cloud:
+        # We're on Streamlit Cloud, use fallback info
+        st.sidebar.info("Running on Streamlit Cloud - using built-in company info")
+        return FALLBACK_INFO
+    
+    # For local development, try to load from file
     try:
         # Try UTF-8 encoding first
         try:
@@ -167,7 +202,7 @@ def load_unisole_info():
                 st.sidebar.success("Successfully loaded unisole.txt with latin-1 encoding")
                 return content
     except Exception as e:
-        st.sidebar.error(f"Error loading UniSole info: {str(e)}")
+        st.sidebar.warning(f"Error loading UniSole info: {str(e)}")
         st.sidebar.info("Using fallback company information")
         return FALLBACK_INFO
 
@@ -295,12 +330,8 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Check API key with debugging info
+    # Check API key
     load_llm()
-    if not st.session_state.api_key_configured:
-        st.warning("""
-        ⚠️ API key not configured. Check the sidebar for debugging information.
-        """)
     
     # Try to load UniSole info at startup
     if not st.session_state.unisole_info:
@@ -314,12 +345,11 @@ def main():
         st.image("https://api.dicebear.com/7.x/identicon/svg?seed=unisole", width=150)
         st.markdown("### Empowering through AI solutions")
         
-        # Add debugging section
-        with st.expander("API Key Debugging"):
-            st.write("If you're seeing API key errors, check this information:")
-            debug_info = debug_api_key()
-            st.write(debug_info)
-            st.write("Note: Proper format in TOML is `GROQ_API_KEY = \"your_key_here\"`")
+        # API Key status
+        if st.session_state.api_key_configured:
+            st.success(f"✅ API key configured (source: {st.session_state.api_key_source})")
+        else:
+            st.error("❌ API key not configured")
         
         # Reset conversation
         if st.button("Reset Conversation"):
