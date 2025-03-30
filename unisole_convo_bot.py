@@ -90,11 +90,15 @@ if "api_key_configured" not in st.session_state:
 # Initialize LLM
 @st.cache_resource
 def load_llm():
-    # Check for GROQ_API_KEY in environment
-    groq_api_key = os.getenv("GROQ_API_KEY")
+    # First try Streamlit secrets (for Streamlit Cloud deployment)
+    try:
+        groq_api_key = st.secrets["GROQ_API_KEY"]
+    except:
+        # Then try environment variables (for local or other deployments)
+        groq_api_key = os.getenv("GROQ_API_KEY")
     
     if not groq_api_key:
-        st.error("GROQ API key not found. Please set the GROQ_API_KEY environment variable or add it to your .env file.")
+        st.error("GROQ API key not found. Please set the GROQ_API_KEY in Streamlit secrets or as an environment variable.")
         st.session_state.api_key_configured = False
         return None
     
