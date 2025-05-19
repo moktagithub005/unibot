@@ -1,7 +1,8 @@
 **UNISOLE: Empowering the Future through AI and Innovation**
+founder is ajay mokta and co-founder disant Gupta
 
 ### **Founding and Vision**
-UNISOLE was founded in **December 2023** by **Ajay Mokta**, a **third-year Engineering Physics student at the National Institute of Technology, Hamirpur**, alongside **Dishant Gupta**, his classmate and co-founder. The startup was established with the vision of **bridging the skill gap in artificial intelligence (AI) and emerging technologies**, particularly for students from rural areas. UNISOLE is actively contributing to India's **Skill India** and **Viksit Bharat** missions by providing hands-on learning opportunities, mentorship, and real-world project experience to aspiring AI enthusiasts.
+UNISOLE was founded in **December 2023** by **Ajay Mokta**, a **final-year Engineering Physics student at the National Institute of Technology, Hamirpur**, alongside **Dishant Gupta**, his classmate and co-founder. The startup was established with the vision of **bridging the skill gap in artificial intelligence (AI) and emerging technologies**, particularly for students from rural areas. UNISOLE is actively contributing to India's **Skill India** and **Viksit Bharat** missions by providing hands-on learning opportunities, mentorship, and real-world project experience to aspiring AI enthusiasts.
 
 ### **Impact and Growth**
 Since its inception, UNISOLE has mentored **over 100 students** in the field of AI, equipping them with **technical expertise, problem-solving skills, and industry-relevant knowledge**. The startup has conducted multiple workshops, training sessions, and interactive projects, ensuring that students gain practical exposure to AI applications. 
@@ -220,3 +221,79 @@ Unisole is not just a startup; it is a movement towards a more **technologically
 - **Scalability**: Our solutions are designed to grow with your business and adapt to changing requirements.
 
 Visit our website at https://unisole-empower.vercel.app/ to learn more about how UniSole can empower your digital journey.
+
+
+## research in unisole
+Research at Unisole: Pioneering AI with Physics-Informed Intelligence
+At Unisole, we are committed to exploring the intersection of artificial intelligence, physics, and human cognition. Our research focuses on developing smarter, energy-efficient, and generalizable models that can transform scientific and computational understanding across disciplines. Below is a summary of some of our key ongoing and published research initiatives:
+
+1. First Research Paper Accepted
+Title: Non-Equilibrium Statistical Analysis of Physics-Informed Neural Networks: Towards a Generalized Diffusion Model
+Authors: Dishant Gupta, Ajay Mokta, Dipa
+
+We are proud to announce that our first conference paper has been accepted. This work explores how non-equilibrium statistical mechanics can be leveraged to enhance Physics-Informed Neural Networks (PINNs). Our aim is to move beyond traditional models and propose a generalized diffusion framework that adapts to complex and real-world physical systems. The proposed model not only improves prediction accuracy in systems governed by diffusion but also opens up new avenues in simulating time-dependent and spatially dynamic environments.
+
+2. Black Box Optimization Using Physics-Informed Neural Networks
+Traditional optimization techniques often fail to exploit domain knowledge, treating the problem as a black box. Our team is developing a novel framework where PINNs are used for black box optimization. By embedding physical laws into the learning process, the model is guided toward more realistic, stable, and faster convergence paths. This approach is especially valuable in systems where data is limited but underlying physics is well-understood, such as in climate modeling, material science, and mechanical design.
+
+3. Energy-Based Models for Efficient Learning
+One of the major challenges in AI today is the high computation power and data requirement. At Unisole, we are investigating Energy-Based Models (EBMs) as a solution. Our research focuses on:
+
+Reducing data dependency without compromising model performance.
+
+Lowering computational overhead by leveraging the energy landscape framework.
+
+Integrating EBMs with PINNs to further enhance learning with minimal supervision.
+
+This makes our models highly efficient and suitable for low-resource environments such as edge devices and mobile platforms.
+
+4. Towards a Differential Equation of the Brain
+Perhaps the most ambitious part of our research is to develop a differential equation that captures the behavior of the human brain. This work serves as a theoretical foundation to take Large Language Models (LLMs) to the next level. Our goal is to:
+
+Understand how the human brain processes vast amounts of information efficiently and with minimal energy.
+
+Translate these principles into LLM architectures that are brain-inspired.
+
+Create a neuro-symbolic and physics-based framework that mirrors how cognition and memory work in humans.
+
+This research is a step toward creating models that think and learn more like humans, opening the door to human-level reasoning in machines but with significantly lower energy consumption.
+
+Conclusion
+Unisole is at the forefront of next-generation AI research that merges deep learning, physics, and neuroscience. By pushing the boundaries of what machine learning can do with fewer resources, we aim to build intelligent systems that are not just powerful but also sustainable and scientifically grounded.
+
+If you'd like to contribute to or collaborate on any of these initiatives, reach out to us at: moktaajay@gmail.com
+
+## unisole vision and mission
+
+Unisole: Powering India’s Future with Science, AI, and Youth Innovation
+As India marches toward its 100th year of independence in 2047, the dream of becoming a developed nation is no longer a distant aspiration—it’s a vision we must build together. At Unisole, we believe that the true drivers of this transformation are science, artificial intelligence (AI), climate resilience, and the untapped potential of Indian youth.
+
+Building Scientific Technology for a Self-Reliant India
+India’s challenges are unique—and so must be our solutions. Unisole is working to create scientific and AI-powered technologies tailored for India’s climate, agricultural systems, and rural economy. From AI-driven crop disease detection models to real-time hailstorm prediction systems, we are developing tools that directly address the needs of Indian farmers and communities most affected by climate uncertainty.
+
+But we’re not stopping there. Our research extends into physics-informed AI models, energy-efficient neural networks, and innovations in data-light computing, making sure that the technology we build is both affordable and scalable across rural and urban settings.
+
+Empowering Youth: The Engine of Nation-Building
+India is a young nation—over 60% of our population is under the age of 35. Yet, much of this talent remains untapped, especially in rural regions. Unisole is targeting this dynamic age group by:
+
+Providing cutting-edge skill development in artificial intelligence, machine learning, climate science, and sustainable technologies.
+
+Promoting grassroots innovation and entrepreneurship to create job creators instead of job seekers.
+
+Encouraging real-world problem solving so that Indian youth can build for Bharat, not just copy models from the West.
+
+We believe that by empowering rural youth, we can create ripples of positive change throughout the Indian economy and society. Whether it’s developing local tech solutions, launching micro-enterprises, or contributing to national research missions, our youth hold the key.
+
+Innovation = Job Creation
+Unemployment is one of the biggest challenges India faces today. But innovation can change that. When young minds are given the tools, mentorship, and freedom to think boldly, they don’t just seek jobs—they build companies, create solutions, and inspire communities.
+
+At Unisole, we are committed to promoting entrepreneurship across all fields—from agritech to edtech, from health AI to renewable energy systems. We are creating platforms where ideas can become prototypes and prototypes can become impactful ventures.
+
+A Call to Action
+India's future depends on what we do today. To become a developed nation by 2047, we must combine our scientific minds, technological skills, and youthful energy in the right direction. Unisole is not just a company—it’s a movement. A movement to bring scientific innovation to every corner of India, to skill every youth, and to build a self-reliant, future-ready nation.
+
+Join us in this mission. Let’s empower, innovate, and transform—together.
+
+#ViksitBharat2047 | #AIForIndia | #RuralInnovation | #UnisoleEmpowers | #YouthPower | #MadeInIndiaForIndia
+
+
