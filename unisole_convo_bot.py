@@ -13,47 +13,90 @@ st.set_page_config(
     page_title="UniSole AI Assistant",
     page_icon="🤖",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed", # Changed to collapsed for mobile
 )
 
-# Apply custom CSS
+# Apply custom CSS with improved mobile responsiveness
 st.markdown("""
 <style>
+    /* Base styling */
     .main {
         background-color: #f5f7f9;
     }
+    
+    /* Responsive container */
     .stApp {
-        max-width: 1200px;
+        max-width: 100%;
         margin: 0 auto;
     }
+    
+    /* Chat message styling with improved mobile layout */
     .chat-message {
-        padding: 1.5rem;
+        padding: 1rem;
         border-radius: 0.8rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
         display: flex;
+        flex-direction: row;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
+    
     .chat-message.user {
         background-color: #e6f3ff;
         border-left: 5px solid #2196F3;
     }
+    
     .chat-message.bot {
         background-color: #f0f0f0;
         border-left: 5px solid #4CAF50;
     }
+    
     .chat-message .avatar {
-        width: 50px;
+        width: 40px;
+        min-width: 40px;
     }
+    
     .chat-message .avatar img {
-        max-width: 40px;
-        max-height: 40px;
+        max-width: 30px;
+        max-height: 30px;
         border-radius: 50%;
         object-fit: cover;
     }
+    
     .chat-message .message {
-        width: 90%;
+        width: calc(100% - 40px);
         padding-left: 0.5rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
+    
+    /* Mobile specific adjustments */
+    @media (max-width: 768px) {
+        .chat-message {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .chat-message .avatar {
+            width: 30px;
+            min-width: 30px;
+        }
+        
+        .chat-message .avatar img {
+            max-width: 25px;
+            max-height: 25px;
+        }
+        
+        .chat-message .message {
+            width: calc(100% - 30px);
+            font-size: 0.9rem;
+        }
+        
+        .stMarkdown p {
+            font-size: 0.9rem;
+        }
+    }
+    
+    /* Button styling */
     .stButton>button {
         background-color: #4CAF50;
         color: white;
@@ -61,9 +104,39 @@ st.markdown("""
         padding: 0.5rem 1rem;
         border-radius: 0.3rem;
         cursor: pointer;
+        width: 100%;
     }
+    
     .stButton>button:hover {
         background-color: #45a049;
+    }
+    
+    /* Header adjustments for mobile */
+    h1, h2, h3 {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    /* Input field improvements */
+    .stTextInput>div>div>input {
+        padding: 0.75rem;
+    }
+    
+    /* Welcome banner with mobile adjustments */
+    .welcome-banner {
+        background-color: #e6f3ff;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        font-size: 0.95rem;
+    }
+    
+    /* Fix for sidebar on mobile */
+    @media (max-width: 768px) {
+        section[data-testid="stSidebar"] {
+            width: 80% !important;
+            min-width: 0 !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -145,8 +218,6 @@ def load_llm():
         api_key = os.getenv("GROQ_API_KEY")
         if api_key:
             source = "env_var"
-    
-    
     
     if not api_key:
         st.session_state.api_key_configured = False
@@ -335,13 +406,27 @@ Always mention the website https://unisole-empower.vercel.app/ when discussing U
 
 # Main application
 def main():
-    st.title("🤖 UniSole AI Assistant")
+    # Detect if we're on mobile
+    is_mobile = """
+    <script>
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        document.documentElement.style.setProperty('--mobile-view', 'true');
+    }
+    </script>
+    """
+    st.markdown(is_mobile, unsafe_allow_html=True)
+    
+    # Use columns for responsive layout
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        st.title("🤖 UniSole AI Assistant")
+    
+    # Welcome banner with improved mobile styling
     st.markdown("""
-    <div style="background-color: #e6f3ff; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-        <p style="margin: 0; font-size: 1.1em;">
-            Welcome to UniSole AI Assistant! I'm here to help answer your questions about UniSole and more.
-            Ask me anything about our company, services, or how we can help empower your digital transformation journey.
-        </p>
+    <div class="welcome-banner">
+        Welcome to UniSole AI Assistant! I'm here to help answer your questions about UniSole and more.
+        Ask me anything about our company, services, or how we can help empower your digital transformation journey.
     </div>
     """, unsafe_allow_html=True)
     
@@ -349,12 +434,12 @@ def main():
     if not st.session_state.unisole_info:
         st.session_state.unisole_info = load_unisole_info()
     
-    # Sidebar for configuration
+    # Sidebar for configuration - now collapsed by default on mobile
     with st.sidebar:
         st.header("UniSole AI Assistant")
         
         # Company logo and branding
-        st.image("https://api.dicebear.com/7.x/identicon/svg?seed=unisole", width=150)
+        st.image("https://api.dicebear.com/7.x/identicon/svg?seed=unisole", width=120)
         st.markdown("### Empowering through AI solutions")
         
         # Initialize API connection
@@ -371,50 +456,62 @@ def main():
             st.error("❌ API key not configured")
             st.info("Check environment variables or secrets configuration")
         
-        # Reset conversation
-        if st.button("Reset Conversation"):
-            st.session_state.chat_history = []
-            st.session_state.conversation_id = f"session_{len(st.session_state.chat_history)}"
-            st.session_state.processing_message = False
-            st.success("Conversation has been reset!")
-            
-        # Reload company info
-        if st.button("Reload Company Info"):
-            st.session_state.unisole_info = load_unisole_info()
-            st.success("Company information reloaded!")
-            
-        # Reload API connection
+        # Sidebar buttons in columns for better mobile layout
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("Reset Chat", use_container_width=True):
+                st.session_state.chat_history = []
+                st.session_state.conversation_id = f"session_{len(st.session_state.chat_history)}"
+                st.session_state.processing_message = False
+                st.success("Conversation reset!")
+                
+        with col2:
+            if st.button("Reload Info", use_container_width=True):
+                st.session_state.unisole_info = load_unisole_info()
+                st.success("Info reloaded!")
+        
+        # Reconnect API button
         if st.button("Reconnect API"):
             st.session_state.llm = None
             if load_llm():
-                st.success("API connection reestablished!")
+                st.success("API connected!")
             else:
-                st.error("Failed to connect to API")
+                st.error("API connection failed")
             
         st.markdown("---")
         st.markdown("### About UniSole")
         st.markdown("""
-        UniSole is an innovative startup company focused on empowering individuals and businesses through advanced AI solutions and digital transformation.
+        UniSole is focused on empowering individuals and businesses through advanced AI solutions and digital transformation.
         
-        This conversational AI assistant is powered by:
+        **Powered by:**
         - Llama3-8b from Groq
         - Streamlit interface
         
-        Visit our website: [unisole-empower.vercel.app](https://unisole-empower.vercel.app/)
+        Visit: [unisole-empower.vercel.app](https://unisole-empower.vercel.app/)
         
         Made with ❤️ by UniSole Team
         """)
     
-    # Display chat interface
-    display_chat_history()
+    # Display chat interface with better container layout
+    chat_container = st.container()
+    with chat_container:
+        display_chat_history()
     
-    # Input for new message with callback
+    # Input for new message with better mobile styling
     st.markdown("---")
+    
+    # Use columns to make the input area more mobile-friendly
+    input_col1, input_col2 = st.columns([5, 1])
     
     # Use a form to prevent auto-rerun
     with st.form(key="message_form", clear_on_submit=True):
         user_input = st.text_input("Your message:", placeholder="Ask me anything about UniSole...")
-        submit_button = st.form_submit_button("Send")
+        
+        # Center the send button and make it more visible
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            submit_button = st.form_submit_button("Send Message")
         
         if submit_button and user_input:
             st.session_state.user_input = user_input
