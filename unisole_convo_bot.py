@@ -90,6 +90,9 @@ if "api_key_configured" not in st.session_state:
 if "api_key_source" not in st.session_state:
     st.session_state.api_key_source = None
 
+if "llm" not in st.session_state:
+    st.session_state.llm = None
+
 # Initialize LLM with direct access to the API key from multiple sources
 def load_llm():
     api_key = None
@@ -100,8 +103,8 @@ def load_llm():
         if "GROQ_API_KEY" in st.secrets:
             api_key = st.secrets["GROQ_API_KEY"]
             source = "streamlit_secrets"
-    except Exception as e:
-        st.sidebar.warning(f"Error accessing Streamlit secrets standard way: {str(e)}")
+    except Exception:
+        pass
     
     # Method 2: Try direct access to raw secrets
     if not api_key:
@@ -119,8 +122,8 @@ def load_llm():
                         api_key = secrets_dict[key]["GROQ_API_KEY"]
                         source = f"nested_raw_secrets.{key}"
                         break
-        except Exception as e:
-            st.sidebar.warning(f"Error accessing raw secrets: {str(e)}")
+        except Exception:
+            pass
     
     # Method 3: Parse the raw text to handle format issues
     if not api_key and hasattr(st.secrets, "_secrets"):
@@ -134,23 +137,21 @@ def load_llm():
                 if start_quote_idx > 0 and end_quote_idx > 0:
                     api_key = raw_secrets[start_quote_idx+1:end_quote_idx]
                     source = "string_parsing"
-        except Exception as e:
-            st.sidebar.warning(f"Error parsing raw secrets: {str(e)}")
+        except Exception:
+            pass
 
-    # Method 4: Last resort - try environment variable
+    # Method 4: Try environment variable
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
         if api_key:
             source = "env_var"
     
-    # Method 5: Hardcoded fallback - USE THIS ONLY FOR TESTING, REMOVE BEFORE DEPLOYMENT
+    # Method 5: Hardcoded fallback - REMOVE BEFORE DEPLOYMENT
     if not api_key:
-        # Your API key here for testing ONLY - remove before deployment
         api_key = "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"
         source = "hardcoded_fallback"
     
     if not api_key:
-        st.error("GROQ API key not found in any source.")
         st.session_state.api_key_configured = False
         st.session_state.api_key_source = None
         return None
@@ -159,7 +160,20 @@ def load_llm():
     st.session_state.api_key_configured = True
     st.session_state.api_key_source = source
     
-    return ChatGroq(groq_api_key=api_key, model_name="llama3-8b-8192")
+    try:
+        llm = ChatGroq(
+            groq_api_key=api_key, 
+            model_name="llama3-8b-8192"
+        )
+        # Test the connection with a simple call to validate the API key
+        test_response = llm.invoke([{"role": "user", "content": "Test connection"}])
+        st.session_state.llm = llm
+        return llm
+    except Exception as e:
+        st.error(f"Error initializing LLM: {str(e)}")
+        st.session_state.api_key_configured = False
+        st.session_state.api_key_source = None
+        return None
 
 # Hardcoded company info as fallback
 FALLBACK_INFO = """
@@ -184,27 +198,30 @@ def load_unisole_info():
     
     if is_cloud:
         # We're on Streamlit Cloud, use fallback info
-        st.sidebar.info("Running on Streamlit Cloud - using built-in company info")
         return FALLBACK_INFO
     
     # For local development, try to load from file
     try:
-        # Try UTF-8 encoding first
-        try:
-            with open("unisole.txt", "r", encoding="utf-8") as f:
-                content = f.read()
-                st.sidebar.success("Successfully loaded unisole.txt")
-                return content
-        except UnicodeDecodeError:
-            # If UTF-8 fails, try with a different encoding
-            with open("unisole.txt", "r", encoding="latin-1") as f:
-                content = f.read()
-                st.sidebar.success("Successfully loaded unisole.txt with latin-1 encoding")
-                return content
-    except Exception as e:
-        st.sidebar.warning(f"Error loading UniSole info: {str(e)}")
-        st.sidebar.info("Using fallback company information")
-        return FALLBACK_INFO
+        # Try to find the file in multiple locations
+        file_paths = ["unisole.txt", "./unisole.txt", "../unisole.txt"]
+        
+        for file_path in file_paths:
+            if os.path.exists(file_path):
+                try:
+                    # Try UTF-8 encoding first
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                        return content
+                except UnicodeDecodeError:
+                    # If UTF-8 fails, try with a different encoding
+                    with open(file_path, "r", encoding="latin-1") as f:
+                        content = f.read()
+                        return content
+    except Exception:
+        pass
+    
+    # If all else fails, return fallback info
+    return FALLBACK_INFO
 
 # Display chat messages
 def display_chat_history():
@@ -246,11 +263,17 @@ def process_input():
         if not st.session_state.unisole_info:
             st.session_state.unisole_info = load_unisole_info()
         
-        # Check if API key is configured
-        if not st.session_state.api_key_configured:
+        # Make sure LLM is loaded
+        if st.session_state.llm is None:
+            llm = load_llm()
+        else:
+            llm = st.session_state.llm
+        
+        # Check if API key is configured and LLM is loaded
+        if not st.session_state.api_key_configured or llm is None:
             st.session_state.chat_history.append({
                 "role": "assistant", 
-                "content": "I'm sorry, but I can't process your request because the API key hasn't been configured. Please check the sidebar for debugging information."
+                "content": "I'm sorry, but I can't process your request because the API connection is not working. Please check the API key configuration."
             })
             st.session_state.processing_message = False
             return
@@ -287,33 +310,28 @@ Always mention the website https://unisole-empower.vercel.app/ when discussing U
         # Add new user input
         messages.append({"role": "user", "content": user_input})
         
-        # Get response
+        # Get response with error handling
         try:
-            llm = load_llm()
-            if llm:
-                response = llm.invoke(messages)
-                bot_response = response.content
-                
-                # Check if this is a company-specific question
-                about_unisole = any(keyword in user_input.lower() for keyword in 
-                            ["unisole", "your company", "this company", "startup", "who are you", 
-                                "what do you do", "company website", "contact", "services"])
-                
-                # If query is about UniSole but the response doesn't mention the website, add it
-                if about_unisole and "unisole-empower.vercel.app" not in bot_response.lower():
-                    bot_response += "\n\nYou can learn more about UniSole at our website: https://unisole-empower.vercel.app/"
-                
-                # Add bot response to chat history
-                st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
-            else:
-                st.session_state.chat_history.append({
-                    "role": "assistant", 
-                    "content": "I'm sorry, but I can't process your request because the API key hasn't been configured. Please check the sidebar for debugging information."
-                })
+            response = llm.invoke(messages)
+            bot_response = response.content
+            
+            # Check if this is a company-specific question
+            about_unisole = any(keyword in user_input.lower() for keyword in 
+                        ["unisole", "your company", "this company", "startup", "who are you", 
+                            "what do you do", "company website", "contact", "services"])
+            
+            # If query is about UniSole but the response doesn't mention the website, add it
+            if about_unisole and "unisole-empower.vercel.app" not in bot_response.lower():
+                bot_response += "\n\nYou can learn more about UniSole at our website: https://unisole-empower.vercel.app/"
+            
+            # Add bot response to chat history
+            st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
         
         except Exception as e:
-            st.error(f"Error getting response: {str(e)}")
-            st.session_state.chat_history.append({"role": "assistant", "content": "I'm sorry, I encountered an error. Please try again or contact UniSole support."})
+            error_message = f"I'm sorry, I encountered an error while processing your request. Please try again or contact UniSole support. Error details: {str(e)}"
+            st.session_state.chat_history.append({"role": "assistant", "content": error_message})
+            # Try to reinitialize the LLM for the next message
+            st.session_state.llm = None
         
         # Reset processing flag
         st.session_state.processing_message = False
@@ -330,10 +348,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Check API key
-    load_llm()
-    
-    # Try to load UniSole info at startup
+    # Try to load company info at startup
     if not st.session_state.unisole_info:
         st.session_state.unisole_info = load_unisole_info()
     
@@ -345,11 +360,19 @@ def main():
         st.image("https://api.dicebear.com/7.x/identicon/svg?seed=unisole", width=150)
         st.markdown("### Empowering through AI solutions")
         
+        # Initialize API connection
+        if st.session_state.llm is None:
+            try:
+                load_llm()
+            except Exception as e:
+                st.error(f"Error connecting to API: {str(e)}")
+        
         # API Key status
         if st.session_state.api_key_configured:
             st.success(f"✅ API key configured (source: {st.session_state.api_key_source})")
         else:
             st.error("❌ API key not configured")
+            st.info("Check environment variables or secrets configuration")
         
         # Reset conversation
         if st.button("Reset Conversation"):
@@ -362,6 +385,14 @@ def main():
         if st.button("Reload Company Info"):
             st.session_state.unisole_info = load_unisole_info()
             st.success("Company information reloaded!")
+            
+        # Reload API connection
+        if st.button("Reconnect API"):
+            st.session_state.llm = None
+            if load_llm():
+                st.success("API connection reestablished!")
+            else:
+                st.error("Failed to connect to API")
             
         st.markdown("---")
         st.markdown("### About UniSole")
