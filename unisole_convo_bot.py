@@ -146,10 +146,7 @@ def load_llm():
         if api_key:
             source = "env_var"
     
-    # Method 5: Hardcoded fallback - REMOVE BEFORE DEPLOYMENT
-    if not api_key:
-        api_key = "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"
-        source = "hardcoded_fallback"
+    
     
     if not api_key:
         st.session_state.api_key_configured = False
